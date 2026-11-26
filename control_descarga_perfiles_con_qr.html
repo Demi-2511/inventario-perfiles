@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Control de descarga de perfiles</title>
+<style>
+:root{--navy:#17365d;--bg:#f4f6f9;--card:#fff;--line:#d9e0e8}
+*{box-sizing:border-box}body{margin:0;font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:#182230}
+header{background:var(--navy);color:white;padding:18px 20px}header h1{font-size:21px;margin:0 0 5px}header p{margin:0;opacity:.85;font-size:13px}
+main{max-width:1100px;margin:18px auto;padding:0 14px;display:grid;gap:14px;grid-template-columns:minmax(280px,380px) 1fr}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 2px 8px #1822300a}
+h2{font-size:17px;margin:0 0 13px}.muted{color:#667085;font-size:12px}
+label{display:block;font-weight:600;font-size:13px;margin:10px 0 5px}
+input,select,button{font:inherit}input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;background:white}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{border:0;border-radius:9px;padding:11px 13px;background:#1d65b7;color:white;font-weight:650;cursor:pointer}
+button.secondary{background:#e8eef5;color:#17365d}button.danger{background:#b42318}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:#f1f5f9;border-radius:10px;padding:12px}.stat b{display:block;font-size:23px}.stat span{font-size:12px;color:#667085}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:#475467;background:#f8fafc}
+.dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.pill{display:inline-block;border-radius:20px;padding:4px 8px;font-size:11px;font-weight:700;background:#eef2f6}
+.preview{border:1px dashed #b8c2cf;border-radius:10px;padding:10px;margin-top:10px}
+#photoPreview{max-width:100%;max-height:130px;display:none;margin-top:8px;border-radius:8px}
+small.note{display:block;color:#667085;line-height:1.45;margin-top:10px}
+@media(max-width:780px){main{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}}
+@media print{body *{visibility:hidden}#labelPrint,#labelPrint *{visibility:visible}#labelPrint{position:absolute;left:0;top:0;width:80mm;min-height:50mm;padding:4mm;border:1px solid #222;color:#111}#labelPrint .colorbar{height:7mm;margin:-4mm -4mm 3mm;background:var(--labelcolor)}#labelPrint h2{font-size:17pt;margin:0}#labelPrint .code{font-size:12pt;font-weight:bold}#labelPrint .big{font-size:22pt;font-weight:800;margin:3mm 0}#labelPrint p{font-size:9pt;margin:1.5mm 0}#labelPrint .qrwrap{display:flex;align-items:center;gap:3mm;margin-top:2mm}#labelPrint #qrCode{width:24mm;height:24mm}#labelPrint #qrCode img,#labelPrint #qrCode canvas{width:24mm!important;height:24mm!important}#labelPrint .qrtext{font-size:7pt;word-break:break-all}}
+.catalog{display:grid;gap:8px}.catalogitem{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}.catalogname{flex:1;min-width:0}.catalogname small{display:block;color:var(--muted);font-size:12px}.danger{background:#fff1f2;color:#b91c1c;border:1px solid #fecdd3;padding:8px 10px;border-radius:9px;font-weight:700}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<header><h1>Control de descarga de perfiles</h1><p>Registro por contenedor · folio independiente por perfil · cantidades reales</p></header>
+<main>
+<section class="card">
+<h2>Registrar paquete</h2>
+<label>Número del contenedor (el del transporte)</label><input id="container" placeholder="Ej. ABCD1234567">
+<label>Perfil</label><select id="profile"></select>
+<div class="preview"><span class="dot" id="profileDot"></span><b id="profileName"></b><div class="muted" id="profileCode"></div></div>
+<div class="row">
+<div><label>Piezas según etiqueta</label><input id="declared" type="number" min="0" placeholder="Ej. 10"></div>
+<div><label>Piezas reales contadas</label><input id="actual" type="number" min="0" placeholder="Ej. 8"></div>
+</div>
+<label>¿Trae marca roja de fábrica?</label><select id="red"><option>No</option><option>Sí</option></select>
+<label>Foto de etiqueta de fábrica (opcional)</label><input id="photo" type="file" accept="image/*" capture="environment">
+<img id="photoPreview" alt="Vista previa de la foto">
+<div class="preview"><b>Vista previa de folio</b><div id="folioPreview" style="font-size:22px;font-weight:800;margin-top:5px">—</div><div id="difference" class="muted">Ingresa las cantidades para calcular diferencia.</div></div>
+<div class="actions"><button id="save">Guardar paquete e imprimir etiqueta</button><button class="secondary" id="clear">Limpiar</button></div>
+<small class="note">La etiqueta se abre en la ventana de impresión del navegador. Para imprimir en una térmica, selecciona la impresora y configura el papel compatible. La foto se conserva en este navegador mientras no se borren sus datos.</small>
+<hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+<h2>Agregar perfil nuevo</h2>
+<label>Nombre del perfil</label><input id="newName" placeholder="Ej. Moldura 2” blanco">
+<div class="actions"><button class="secondary" id="addProfile">Generar código y color</button></div>
+<div id="newProfileMsg" class="muted" aria-live="polite"></div>
+<h3 style="margin:18px 0 8px">Catálogo de perfiles activos</h3>
+<div id="profileCatalog" class="catalog"></div>
+<small class="note">Al eliminar un perfil, dejará de aparecer para registrar paquetes nuevos. Los paquetes ya guardados conservarán su nombre, código y color en el historial.</small>
+</section>
+<section class="card">
+<h2>Resumen del contenedor</h2>
+<div class="stats"><div class="stat"><b id="pkgTotal">0</b><span>Paquetes</span></div><div class="stat"><b id="pieceTotal">0</b><span>Piezas reales</span></div><div class="stat"><b id="diffTotal">0</b><span>Diferencias</span></div></div>
+<div class="actions" style="margin:0 0 12px"><button class="secondary" id="export">Exportar CSV</button><button class="secondary" id="profilesExport">Exportar catálogo</button></div>
+<div class="tablewrap"><table><thead><tr><th>Perfil</th><th>Folio</th><th>Etiqueta</th><th>Real</th><th>Diferencia</th><th>Marca roja</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="muted">Aún no hay paquetes registrados para este contenedor.</td></tr></tbody></table></div>
+<h2 style="margin-top:20px">Historial de contenedores</h2><div id="history" class="muted">Los registros guardados aparecerán aquí.</div>
+<small class="note">Primera versión local: guarda los datos en el navegador de este dispositivo. Para ver los mismos registros en iPhone y MacBook simultáneamente hace falta conectar una base de datos compartida; iCloud/Numbers no se sincroniza automáticamente con esta página.</small>
+</section>
+</main>
+<div id="labelPrint" style="display:none;--labelcolor:#2563EB"><div class="colorbar"></div><div class="code"></div><h2></h2><div class="big"></div><p></p><p></p><p></p><p></p><div class="qrwrap"><div id="qrCode"></div><div class="qrtext">ESCANEA PARA IDENTIFICAR EL PAQUETE<br><b id="qrValue"></b></div></div></div>
+<script>
+const initial=[
+["R3-NEG",'Riel 3” en negro',"#2563EB"],["CH3-NEG",'Chambrana de 3” en negro',"#9333EA"],["ES3-NEG",'Escalonado de 3” en negro',"#D97706"],["CE3-BLA",'Cerco 3” en blanco',"#16A34A"],["CH3-BLA",'Chambrana 3” en blanco',"#0891B2"],["ZO3-BLA",'Zoclo 3” en blanco',"#DB2777"],["CA2-BLA",'Cabezal 2” en blanco',"#65A30D"],["IN3-BLA",'Intermedio 3” en blanco',"#EA580C"],["TR3-BLA",'Traslape 3” blanco',"#0D9488"],["TR3-NEG",'Traslape 3” negro',"#7C3AED"],["CU-NAT",'Cuadrado natural',"#64748B"],["AN-NAT",'Ángulo natural',"#A16207"],["C12-NAT",'Canal 1/2 natural',"#BE123C"],["C34-NAT",'Canal 3/4 natural',"#4F46E5"]];
+function hexRgb(hex){const h=hex.replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16));}
+function hslHex(h,s=78,l=42){s/=100;l/=100;const k=n=>(n+h/30)%12;const a=s*Math.min(l,1-l);const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return "#"+[f(0),f(8),f(4)].map(v=>Math.round(255*v).toString(16).padStart(2,"0")).join("").toUpperCase();}
+function distinctColor(used){let best="#2563EB",bestScore=-1;for(let h=0;h<360;h+=3){const candidate=hslHex(h),rgb=hexRgb(candidate);const score=used.length?Math.min(...used.map(c=>{const x=hexRgb(c);return Math.sqrt(rgb.reduce((sum,v,i)=>sum+(v-x[i])**2,0));})):9999;if(score>bestScore){bestScore=score;best=candidate;}}return best;}
+let profiles=JSON.parse(localStorage.getItem("profiles_v1")||"null")||initial.map(([code,name,color])=>({code,name,color}));
+let records=JSON.parse(localStorage.getItem("records_v1")||"[]");
+let photoData="";
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function saveData(){localStorage.setItem("profiles_v1",JSON.stringify(profiles));localStorage.setItem("records_v1",JSON.stringify(records));}
+function currentContainer(){return $("container").value.trim();}
+function selected(){return profiles.find(p=>p.code===$("profile").value)||profiles[0];}
+function folioFor(container,code){return records.filter(r=>r.container===container&&r.code===code).length+1;}
+function refreshProfiles(){const old=$("profile").value;$("profile").innerHTML=profiles.map(p=>`<option value="${esc(p.code)}">${esc(p.name)} (${esc(p.code)})</option>`).join("");if(profiles.some(p=>p.code===old))$("profile").value=old;else if(profiles.length)$("profile").value=profiles[0].code;profileInfo();previewFolio();renderProfileCatalog();}
+function renderProfileCatalog(){$("profileCatalog").innerHTML=profiles.length?profiles.map(p=>{const count=records.filter(r=>r.code===p.code).length;return `<div class="catalogitem"><span class="dot" style="background:${p.color}"></span><span class="catalogname"><b>${esc(p.name)}</b><small>${esc(p.code)} · ${count} paquete(s) registrados</small></span><button type="button" class="danger" data-remove-profile="${esc(p.code)}">Eliminar</button></div>`;}).join(""):"<div class='muted'>No hay perfiles activos.</div>";}
+function profileInfo(){const p=selected();$("profileDot").style.background=p.color;$("profileName").textContent=p.name;$("profileCode").textContent=p.code;}
+function previewFolio(){const c=currentContainer(),p=selected();$("folioPreview").textContent=c?`${p.code}-${String(folioFor(c,p.code)).padStart(2,"0")}`:"Escribe el número del contenedor";profileInfo();}
+function render(){const c=currentContainer(),list=records.filter(r=>r.container===c);$("pkgTotal").textContent=list.length;$("pieceTotal").textContent=list.reduce((a,r)=>a+r.actual,0);$("diffTotal").textContent=list.filter(r=>r.diff!==0).length;
+$("rows").innerHTML=list.length?list.map(r=>`<tr><td><span class="dot" style="background:${r.color}"></span>${esc(r.name)}</td><td>${r.folio}</td><td>${r.declared??"—"}</td><td><b>${r.actual}</b></td><td><span class="pill">${r.diff>0?"+"+r.diff:r.diff}</span></td><td>${r.red}</td></tr>`).join(""):`<tr><td colspan="6" class="muted">Aún no hay paquetes registrados para este contenedor.</td></tr>`;
+const containers=[...new Set(records.map(r=>r.container))];$("history").innerHTML=containers.length?containers.map(x=>`<div style="padding:7px 0;border-bottom:1px solid var(--line)"><b>${esc(x)}</b> · ${records.filter(r=>r.container===x).length} paquetes · ${records.filter(r=>r.container===x).reduce((a,r)=>a+r.actual,0)} piezas reales</div>`).join(""):"Los registros guardados aparecerán aquí.";
+}
+function diffText(d){return d===0?"Correcto":d<0?`Faltan ${Math.abs(d)} piezas`:`Sobran ${d} piezas`;}
+function updateDiff(){const d=Number($("actual").value)-Number($("declared").value);$("difference").textContent=$("actual").value!==""&&$("declared").value!==""?diffText(d):"Ingresa las cantidades para calcular diferencia.";previewFolio();}
+["container","profile","declared","actual"].forEach(id=>$(id).addEventListener("input",()=>{if(id==="profile")profileInfo();updateDiff();render();}));
+$("profile").addEventListener("change",()=>{profileInfo();previewFolio();});
+$("photo").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{photoData=rd.result;$("photoPreview").src=photoData;$("photoPreview").style.display="block";};rd.readAsDataURL(f);});
+$("clear").onclick=()=>{$("declared").value="";$("actual").value="";$("red").value="No";$("photo").value="";photoData="";$("photoPreview").style.display="none";updateDiff();};
+$("save").onclick=()=>{const c=currentContainer(),p=selected(),d=$("declared").value===""?null:Number($("declared").value),a=$("actual").value===""?null:Number($("actual").value);if(!c){alert("Escribe el número del contenedor.");return;}if(a===null||!Number.isInteger(a)||a<0){alert("Ingresa la cantidad real contada.");return;}if(d!==null&&(!Number.isInteger(d)||d<0)){alert("La cantidad de fábrica debe ser un número válido.");return;}const folio=folioFor(c,p.code),diff=d===null?null:a-d;const rec={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),container:c,code:p.code,name:p.name,color:p.color,folio,declared:d,actual:a,diff,red:$("red").value,photo:photoData,created:new Date().toISOString()};records.push(rec);saveData();render();const lp=$("labelPrint");lp.style.display="block";lp.style.setProperty("--labelcolor",p.color);lp.querySelector(".colorbar").style.background=p.color;lp.querySelector(".code").textContent=p.code;lp.querySelector("h2").textContent=p.name;lp.querySelector(".big").textContent=`PAQUETE ${String(folio).padStart(2,"0")}`;const ps=lp.querySelectorAll("p");ps[0].textContent=`CONTENEDOR: ${c}`;ps[1].textContent=`PIEZAS ETIQUETA: ${d??"No indicada"}`;ps[2].textContent=`PIEZAS REALES: ${a}   DIFERENCIA: ${diff===null?"—":diff>0?"+"+diff:diff}`;ps[3].textContent=`MARCA ROJA DE FÁBRICA: ${$("red").value.toUpperCase()}`;const uniqueCode=`${c}-${p.code}-${String(folio).padStart(2,"0")}`;$("qrValue").textContent=uniqueCode;$("qrCode").innerHTML="";if(typeof QRCode!=="undefined"){new QRCode($("qrCode"),{text:`PAQUETE=${uniqueCode};CONTENEDOR=${c};PERFIL=${p.name};CODIGO=${p.code};FOLIO=${folio};PIEZAS_REALES=${a}`,width:160,height:160,correctLevel:QRCode.CorrectLevel.M});}else{$("qrCode").textContent="QR requiere conexión a internet";}window.print();lp.style.display="none";$("declared").value="";$("actual").value="";$("red").value="No";$("photo").value="";photoData="";$("photoPreview").style.display="none";updateDiff();};
+$("profileCatalog").addEventListener("click",e=>{const btn=e.target.closest("[data-remove-profile]");if(!btn)return;const code=btn.dataset.removeProfile;const p=profiles.find(x=>x.code===code);if(!p)return;const count=records.filter(r=>r.code===code).length;const message=count?`¿Eliminar "${p.name}" del catálogo? Ya tiene ${count} paquete(s) registrados. Esos registros históricos se conservarán, pero no podrás elegir este perfil para nuevos paquetes.`:`¿Eliminar "${p.name}" del catálogo?`;if(!confirm(message))return;profiles=profiles.filter(x=>x.code!==code);saveData();refreshProfiles();$("newProfileMsg").textContent=`Perfil ${code} eliminado del catálogo. El historial se conservó.`;});
+$("addProfile").onclick=()=>{const name=$("newName").value.trim();if(!name){$("newProfileMsg").textContent="Escribe el nombre del perfil.";return;}const words=name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().match(/[A-Z0-9]+/g)||["PERFIL"];let code=words.length>1?words.map(w=>w.slice(0,2)).join("").slice(0,8):words[0].slice(0,6);let base=code,n=2;while(profiles.some(p=>p.code===code)){code=base+n++;}const color=distinctColor(profiles.map(p=>p.color));profiles.push({code,name,color});saveData();refreshProfiles();$("profile").value=code;profileInfo();$("newProfileMsg").textContent=`Agregado: ${code} · color asignado. El color se mantiene en el catálogo.`;$("newName").value="";};
+$("export").onclick=()=>{const c=currentContainer();const rows=[["Contenedor","Código","Perfil","Folio","Piezas etiqueta","Piezas reales","Diferencia","Marca roja","Fecha"],...records.filter(r=>r.container===c).map(r=>[r.container,r.code,r.name,r.folio,r.declared??"",r.actual,r.diff??"",r.red,r.created])];downloadCSV(rows,`descarga_${c||"contenedor"}.csv`);};
+$("profilesExport").onclick=()=>downloadCSV([["Código","Perfil","Color"],...profiles.map(p=>[p.code,p.name,p.color])],"catalogo_perfiles.csv");
+function downloadCSV(rows,name){const csv="\ufeff"+rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();URL.revokeObjectURL(a.href);}
+refreshProfiles();render();updateDiff();
+</script>
+</body></html>
